@@ -1,0 +1,34 @@
+- name: cleanup kubernetes data
+  shell: |
+    kubeadm reset -f
+    systemctl stop kubelet
+    systemctl stop docker
+    rm -rf /var/lib/cni/
+    rm -rf /var/lib/kubelet/*
+    rm -rf /etc/cni/
+    ip link delete cni0
+    rm -rf /var/lib/docker/*
+    rm -rf /etc/kubernetes
+
+- name: remove yum packages
+  become: yes
+  yum:
+    name: "{{item}}"
+    state: absent
+  with_items:
+    - kubelet
+    - kubeadm
+    - kubectl
+    - docker-ce
+    - device-mapper-persistent-data
+    - lvm2
+
+- name: Remove docker-ce-stable repo
+  yum_repository:
+    name: docker-ce
+    state: absent
+
+- name: Remove kubernetes repo
+  yum_repository:
+    name: kubernetes
+    state: absent

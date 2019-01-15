@@ -1,0 +1,4 @@
+- hosts: k8s-workers
+  become: yes
+  roles:
+    - kubeadm-join-workers

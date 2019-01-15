@@ -1,0 +1,33 @@
+- name: Download Kubeadm container images
+  shell: kubeadm config images pull
+
+- name: "Create kubernetes folders"
+  file:
+    path: /etc/kubernetes/pki/etcd
+    state: directory
+    mode: 0640
+    owner: root
+    group: root
+
+- name: "Push Kubernetes Master PKI files to master replicas"
+  copy: 
+    src: /tmp/kubeadm-ha/
+    dest: /etc/kubernetes/
+    owner: root
+    group: root
+    mode: preserve
+#  set .crt to 640 set all else to 600
+
+- name: Generate master join token
+  shell: kubeadm token create --print-join-command
+  register: kubeadm_join_cmd
+  delegate_to: "{{groups['k8s-master-primary'][0]}}"
+
+- set_fact:
+    kubeadm_join: "{{ kubeadm_join_cmd.stdout }}"
+
+- name: Join Master replicas to cluster
+  shell: "{{ kubeadm_join }} --experimental-control-plane"
+
+- pause:
+    prompt: "Wait for containers to Pull and install"

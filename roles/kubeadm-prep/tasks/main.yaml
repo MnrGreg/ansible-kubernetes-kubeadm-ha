@@ -1,0 +1,46 @@
+- name: Remove swapfile from /etc/fstab
+  mount:
+    name: swap
+    fstype: swap
+    state: absent
+
+- name: Turn swap off
+  shell: swapoff -a
+
+- name: Set Enforce
+  command: setenforce 0
+  ignore_errors: True
+
+- name: Install kubeadm packages
+  become: yes
+  yum:
+    name: "{{item}}"
+    allow_downgrade: yes 
+  with_items:
+    - kubelet-{{kubelet_version}}
+    - kubeadm
+    - kubectl
+
+- name: Add netbridge config ip6
+  lineinfile:
+    path: /etc/sysctl.d/k8s.conf
+    line: 'net.bridge.bridge-nf-call-ip6tables = 1'
+    state: present
+    create: yes
+
+- name: Add netbridge config ip4
+  lineinfile:
+    path: /etc/sysctl.d/k8s.conf
+    line: 'net.bridge.bridge-nf-call-iptables = 1'
+    state: present
+    create: yes
+
+- name: update sysctl
+  command: sysctl --system
+
+- name: Start kubelet
+  systemd:
+    state: started
+    daemon_reload: yes
+    name: kubelet
+    enabled: yes

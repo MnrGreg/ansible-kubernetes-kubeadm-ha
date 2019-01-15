@@ -1,0 +1,5 @@
+- hosts: k8s-master-replicas
+  become: yes
+  roles:
+    - kubeadm-join-masters
+    #- {role: kubeadm-join-master, when: "groups['k8s-masters'][0] != inventory_hostname"}

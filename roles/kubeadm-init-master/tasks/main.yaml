@@ -1,0 +1,72 @@
+
+- name: Download Kubeadm container images
+  shell: kubeadm config images pull
+
+- name: "Create kubeadm init config yaml"
+  copy:
+    content: "{{ kubeadm_config_options | to_nice_yaml }}"
+    dest: /tmp/kubeadm-config.yaml
+    mode: 0644
+
+- name: Kubeadm init
+  shell: kubeadm init --config=/tmp/kubeadm-config.yaml
+  register: rslt
+
+- name: Store init output
+  action: copy content="{{ rslt.stdout }}" dest="/etc/kubernetes/kubeadm-init.stdout"
+
+- name: Create .kube folder
+  file:
+    path: "~{{ ansible_ssh_user }}/.kube"
+    state: directory
+    owner: "{{ ansible_ssh_user }}"
+
+- name: Copy admin.conf to .kube folder
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: "~{{ ansible_ssh_user }}/.kube/config"
+    owner: "{{ ansible_ssh_user }}"
+    remote_src: yes
+
+- name: Create .kube folder
+  file:
+    path: "/root/.kube"
+    state: directory
+    owner: "root"
+
+- name: Copy admin.conf to .kube folder
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: "/root/.kube/config"
+    owner: "root"
+    remote_src: yes
+
+- name: "Fetching Kubernetes Master PKI files from primary master"
+  fetch:
+    src: /etc/kubernetes/pki/{{item}}
+    dest: /tmp/kubeadm-ha/pki/{{item}}
+    flat: yes
+  with_items:
+    - ca.crt
+    - ca.key
+    - sa.key
+    - sa.pub
+    - front-proxy-ca.crt 
+    - front-proxy-ca.key
+
+- name: "Fetching Kubernetes Master ETCD files from primary master"
+  fetch:
+    src: /etc/kubernetes/pki/etcd/{{item}}
+    dest: /tmp/kubeadm-ha/pki/etcd/{{item}}
+    flat: yes
+  with_items:
+    - ca.crt
+    - ca.key
+
+- name: "Fetching Kubernetes Master Admin files from primary master"
+  fetch:
+    src: /etc/kubernetes/{{item}}
+    dest: /tmp/kubeadm-ha/{{item}}
+    flat: yes
+  with_items:
+    - admin.conf 

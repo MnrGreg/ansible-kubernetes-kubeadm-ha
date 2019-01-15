@@ -1,0 +1,12 @@
+- name: Docker Pull Container Images
+  shell: docker pull {{ kubernetes_dashboard_image }}
+  delegate_to: "{{ item }}"
+  with_items: "{{ groups['k8s-workers'] }}"
+
+- name: Create Kubernetes Dashboard Deployment
+  shell: curl https://raw.githubusercontent.com/kubernetes/dashboard/v1.10.1/src/deploy/recommended/kubernetes-dashboard.yaml | kubectl apply -f -
+  environment: "{{proxy_env}}"
+
+- pause:
+    prompt: "Wait for containers to Pull and install"
+

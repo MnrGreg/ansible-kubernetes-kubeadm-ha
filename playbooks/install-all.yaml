@@ -1,0 +1,11 @@
+- import_playbook: ansible-requirements.yaml
+- import_playbook: repos.yaml
+- import_playbook: docker.yaml
+- import_playbook: kubeadm-prep.yaml
+- import_playbook: kubeadm-init-master.yaml
+- import_playbook: calico.yaml
+- import_playbook: kubeadm-join-masters.yaml
+- import_playbook: kubeadm-join-workers.yaml
+- import_playbook: helm-install.yaml
+- import_playbook: local-storage-provisioner.yaml
+- import_playbook: kubernetes-dashboard.yaml

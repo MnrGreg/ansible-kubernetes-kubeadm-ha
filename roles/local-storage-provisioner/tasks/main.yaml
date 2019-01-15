@@ -1,0 +1,13 @@
+
+- name: Docker Pull Container Images
+  shell: docker pull {{ local_volume_provisioner_image }}
+  delegate_to: "{{ item }}"
+  with_items: "{{ groups['k8s-workers'] }}"
+
+- name: copy local-storage-provisioner manifests
+  template:
+    src: local-storage-provisioner.yaml
+    dest: /tmp/local-storage-provisioner.yaml
+
+- name: Create Local Storage Provisioner Deployments
+  shell: kubectl apply -f /tmp/local-storage-provisioner.yaml

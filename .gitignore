@@ -1,0 +1,5 @@
+.DS_Store
+*.csr
+*.key
+*secret.yaml
+key.pem
