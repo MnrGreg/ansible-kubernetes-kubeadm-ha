@@ -28,7 +28,7 @@ Update the `inventory/group_vars` sections:
 
 ### Install process:
 
-Run install-all.yaml playbook to get your cluster fully setup. Note 8888 below if the default tinyproxy port- adjust according to your proxy install.
+Run install-all.yaml playbook to get your cluster fully setup. Note port 8888 below is the default for tinyproxy- adjust according to your proxy install.
 You can also run the different playbooks separately for different purposes (setting up docker, masters, kubeadm, helm ...).
 
 ```
