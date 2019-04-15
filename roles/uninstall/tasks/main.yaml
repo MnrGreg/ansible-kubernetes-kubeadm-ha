@@ -4,11 +4,14 @@
     systemctl stop kubelet
     systemctl stop docker
     rm -rf /var/lib/cni/
+    rm -rf /var/lib/etcd
     rm -rf /var/lib/kubelet/*
     rm -rf /etc/cni/
     ip link delete cni0
     rm -rf /var/lib/docker/*
     rm -rf /etc/kubernetes
+    rm -f /tmp/kubeadm-config.yaml
+    rm -rf /tmp/charts/
 
 - name: remove yum packages
   become: yes
