@@ -1,12 +1,14 @@
-- name: Docker Pull Container Images
-  shell: docker pull {{ kubernetes_dashboard_image }}
-  delegate_to: "{{ item }}"
-  with_items: "{{ groups['k8s-workers'] }}"
+- name: Copy kubernetes-dashboard.yaml manifests
+  template:
+    src: kubernetes-dashboard.yaml
+    dest: /tmp/kubernetes-dashboard.yaml
+    force: yes
 
-- name: Create Kubernetes Dashboard Deployment
-  shell: curl https://raw.githubusercontent.com/kubernetes/dashboard/v1.10.1/src/deploy/recommended/kubernetes-dashboard.yaml | kubectl apply -f -
-  environment: "{{proxy_env}}"
+- name: Set kubernetes-dashboard container image value
+  replace:
+    path: /tmp/kubernetes-dashboard.yaml
+    regexp: "image: kubernetesui"
+    replace: "image: {{ container_registry }}/keystone"
 
-- pause:
-    prompt: "Wait for containers to Pull and install"
-
+- name: Create kubernetes-dashboard Deployment
+  shell: kubectl apply -f /tmp/kubernetes-dashboard.yaml

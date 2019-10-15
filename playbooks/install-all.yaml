@@ -2,6 +2,7 @@
 - import_playbook: repos.yaml
 - import_playbook: docker.yaml
 - import_playbook: kubeadm-prep.yaml
+#- import_playbook: kubeadm-singlenode-cluster.yaml
 - import_playbook: kubeadm-init-master.yaml
 - import_playbook: calico.yaml
 - import_playbook: kubeadm-join-masters.yaml
@@ -9,3 +10,5 @@
 - import_playbook: helm-install.yaml
 - import_playbook: local-storage-provisioner.yaml
 - import_playbook: kubernetes-dashboard.yaml
+- import_playbook: elastic-search.yaml
+- import_playbook: aad-authentication.yaml

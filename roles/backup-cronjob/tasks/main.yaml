@@ -1,0 +1,24 @@
+
+- name: Copy s3 storage secret
+  template:
+    src: s3-storage-secret.yaml
+    dest: /tmp/s3-storage-secret.yaml
+    force: yes
+
+- name: Create S3 storage secret
+  shell: kubectl apply -f /tmp/s3-storage-secret.yaml
+
+- name: Copy etcd-backup manifests
+  template:
+    src: etcd-backup-cronjob.yaml
+    dest: /tmp/etcd-backup-cronjob.yaml
+    force: yes
+
+- name: Set S3 Folder Name within template
+  replace:
+    path: /tmp/etcd-backup-cronjob.yaml
+    regexp: "kubernetes_cluster_label"
+    replace: "{{ kubernetes_cluster_label }}"
+    
+- name: Create Etcd Backup Cronjob Deployments
+  shell: kubectl apply -f /tmp/etcd-backup-cronjob.yaml

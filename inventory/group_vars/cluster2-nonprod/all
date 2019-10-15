@@ -1,0 +1,58 @@
+---
+
+docker_version: 18.09.6
+kubernetes_version: v1.15.0
+kubeadm_version: 1.15.0
+
+# kubernetes API load balanced VIP for HA installations
+kubernetes_loadbalanced_api_dns: k8s-api02.nonprod.domain.local
+kubernetes_cluster_label: cluster2-nonprod
+
+# Container registry01
+container_registry: container-registry01.nonprod.domain.local
+
+# Docker Daemon configuration
+docker_ce_daemon_options:
+    exec-opts: [ "native.cgroupdriver=systemd" ]
+    log-driver: json-file
+    log-opts:
+        max-size: "100m"
+        max-file: "7"
+    storage-driver: overlay2
+    storage-opts: [ "overlay2.override_kernel_check=true" ]
+
+# Kubernetes Kubeadm Cluster Configuration
+kubeadm_config_options:
+    apiVersion: kubeadm.k8s.io/v1beta1
+    kind: ClusterConfiguration
+    kubernetesVersion: "{{ kubernetes_version }}"
+    apiServer:
+        certSANs:
+            - "{{ kubernetes_loadbalanced_api_dns }}"
+    controlPlaneEndpoint: "{{ kubernetes_loadbalanced_api_dns }}:6443"
+    networking:
+        podSubnet: 10.244.0.0/16
+    imageRepository: "{{ container_registry }}/keystone"
+    useHyperKubeImage: true
+    clusterName: "{{ kubernetes_cluster_label }}"
+    etcd:
+        local:
+            imageRepository: "{{ container_registry }}/keystone"
+
+
+# Addon Container Images
+tiller_image: "{{ container_registry }}/keystone/tiller:v2.12.1"
+
+# Filebeat Kafka Topic Name
+filebeat_app_id: kubernetes-logs-nonprod
+
+# Metricbeat Kafka Topic Name
+metricbeat_app_id: metricbeat-kubernetes-nonprod
+
+# Azure AD Admin group and AppID
+aad_admin_groupname: XXXXX
+aad_admin_groupid: XXXXX
+
+# Azure AD User group and AppID
+aad_user_groupname: XXXXX
+aad_user_groupid: XXXXX

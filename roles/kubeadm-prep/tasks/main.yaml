@@ -11,20 +11,35 @@
   command: setenforce 0
   ignore_errors: True
 
-- name: Install kubeadm packages
+- name: Install kubelet package
   become: yes
   yum:
-    name: "{{item}}"
-    allow_downgrade: yes 
-  with_items:
-    - kubelet-{{kubelet_version}}
-    - kubeadm
-    - kubectl
+    name: "kubelet-{{kubeadm_version}}"
+    enablerepo: kubernetes
 
-- name: Add netbridge config ip6
+- name: Install kubectl package
+  become: yes
+  yum:
+    name: "kubectl-{{kubeadm_version}}"
+    enablerepo: kubernetes
+
+- name: Install kubeadm package
+  become: yes
+  yum:
+    name: "kubeadm-{{kubeadm_version}}"
+    enablerepo: kubernetes
+
+- name: Add vm swappiness
   lineinfile:
     path: /etc/sysctl.d/k8s.conf
-    line: 'net.bridge.bridge-nf-call-ip6tables = 1'
+    line: 'vm.swappiness = 0'
+    state: present
+    create: yes
+
+- name: Add vm overcommit_memory
+  lineinfile:
+    path: /etc/sysctl.d/k8s.conf
+    line: 'vm.overcommit_memory = 1'
     state: present
     create: yes
 
@@ -32,6 +47,13 @@
   lineinfile:
     path: /etc/sysctl.d/k8s.conf
     line: 'net.bridge.bridge-nf-call-iptables = 1'
+    state: present
+    create: yes
+
+- name: Increase net ipv4 tcp_max_syn_backlog
+  lineinfile:
+    path: /etc/sysctl.d/k8s.conf
+    line: 'net.ipv4.tcp_max_syn_backlog=2621440'
     state: present
     create: yes
 

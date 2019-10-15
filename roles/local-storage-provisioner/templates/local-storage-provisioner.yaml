@@ -3,44 +3,31 @@
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: local-storage-kafkabroker
+  name: local-storage-elastic
 provisioner: kubernetes.io/no-provisioner
 volumeBindingMode: WaitForFirstConsumer
----
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: local-storage-zookeeperdata
-provisioner: kubernetes.io/no-provisioner
-volumeBindingMode: WaitForFirstConsumer
----
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: local-storage-zookeeperlog
-provisioner: kubernetes.io/no-provisioner
-volumeBindingMode: WaitForFirstConsumer
+# Supported policies: Delete, Retain
+reclaimPolicy: Delete
 ---
 # Source: provisioner/templates/provisioner.yaml
+ 
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: local-provisioner-config 
   namespace: default 
 data:
-  useNodeNameOnly: "true"
   storageClassMap: |     
-    local-storage-kafkabroker:
-       hostDir: /mnt/local-storage-kafkabroker
-       mountDir:  /mnt/local-storage-kafkabroker 
-    local-storage-zookeeperdata:
-       hostDir: /mnt/local-storage-zookeeperdata
-       mountDir:  /mnt/local-storage-zookeeperdata
-    local-storage-zookeeperlog:
-       hostDir: /mnt/local-storage-zookeeperlog
-       mountDir:  /mnt/local-storage-zookeeperlog
+    local-storage-elastic:
+       hostDir: /pv
+       mountDir:  /pv
+       blockCleanerCommand:
+         - "/scripts/shred.sh"
+         - "2"
+       volumeMode: Filesystem
+       fsType: ext4
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: local-volume-provisioner
@@ -58,7 +45,7 @@ spec:
     spec:
       serviceAccountName: local-storage-admin
       containers:
-        - image: "quay.io/external_storage/local-volume-provisioner:v2.2.0"
+        - image: "container-registry01.nonprod.domain.local/keystone/local-volume-provisioner:v2.3.2"
           imagePullPolicy: "IfNotPresent"
           name: provisioner 
           securityContext:
@@ -71,32 +58,29 @@ spec:
           volumeMounts:
             - mountPath: /etc/provisioner/config 
               name: provisioner-config
-              readOnly: true             
-            - mountPath:  /mnt/local-storage-kafkabroker 
-              name: local-storage-kafkabroker
-            - mountPath:  /mnt/local-storage-zookeeperdata
-              name: local-storage-zookeeperdata
-            - mountPath:  /mnt/local-storage-zookeeperlog
-              name: local-storage-zookeeperlog
+              readOnly: true 
+            - mountPath: /pv
+              name: local-storage-elastic
+              mountPropagation: "HostToContainer" 
       volumes:
         - name: provisioner-config
           configMap:
             name: local-provisioner-config         
-        - name: local-storage-kafkabroker
+        - name: local-storage-elastic
           hostPath:
-            path: /mnt/local-storage-kafkabroker
-        - name: local-storage-zookeeperdata
-          hostPath:
-            path: /mnt/local-storage-zookeeperdata
-        - name: local-storage-zookeeperlog
-          hostPath:
-            path: /mnt/local-storage-zookeeperlog
+            path: /pv
 ---
+# Source: provisioner/templates/provisioner-service-account.yaml
+
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: local-storage-admin
+  namespace: default
+
 ---
+# Source: provisioner/templates/provisioner-cluster-role-binding.yaml
+
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -134,19 +118,3 @@ roleRef:
   kind: ClusterRole
   name: local-storage-provisioner-node-clusterrole
   apiGroup: rbac.authorization.k8s.io
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: local-volume-provisioner
-  namespace: default 
-  labels:
-    app: local-volume-provisioner
-spec:
-  type: ClusterIP
-  selector:
-    app: local-volume-provisioner
-  ports:
-  - name: metrics
-    port: 8080
-    protocol: TCP

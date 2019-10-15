@@ -1,6 +1,6 @@
 
-- name: Download Kubeadm container images
-  shell: kubeadm config images pull
+- pause:
+    prompt: "Wait before initializing master"
 
 - name: "Create kubeadm init config yaml"
   copy:
@@ -11,6 +11,10 @@
 - name: Kubeadm init
   shell: kubeadm init --config=/tmp/kubeadm-config.yaml
   register: rslt
+  ignore_errors: yes
+
+- pause:
+    prompt: "Validate kubeadm init"
 
 - name: Store init output
   action: copy content="{{ rslt.stdout }}" dest="/etc/kubernetes/kubeadm-init.stdout"

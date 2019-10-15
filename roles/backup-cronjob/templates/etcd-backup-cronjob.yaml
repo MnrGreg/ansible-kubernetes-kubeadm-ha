@@ -1,0 +1,72 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kube-system
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: etcd-backup
+  namespace: kube-system
+spec:
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 7
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          nodeSelector:
+            node-role.kubernetes.io/master: ""
+          tolerations:
+          - key: node-role.kubernetes.io/master
+            effect: NoSchedule
+            operator: "Exists"
+          hostNetwork: true
+          containers:
+          - name: etcd-backup
+            image: container-registry01.nonprod.domain.local/system/etcd-backup:v1
+            imagePullPolicy: IfNotPresent
+            command: ['sh', '-c', 'etcdctl --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/healthcheck-client.crt --key=/etc/kubernetes/pki/etcd/healthcheck-client.key snapshot save /tmp/etcd-snapshot-$(date +%Y-%m-%d_%H:%M:%S_%Z).db && s3cmd --access_key=$ACCESS_KEY --secret_key=$SECRET_KEY --host=ashobjectstorage.domain.local --host-bucket=$S3_BUCKET.ashobjectstorage.domain.local --no-check-certificate put /tmp/etcd-snapshot-$(date +%Y-%m-%d_%H:%M:%S_%Z).db s3://$S3_BUCKET/backups/$S3_FOLDER/']
+            securityContext:
+              allowPrivilegeEscalation: true
+            env:
+            - name: ETCDCTL_API
+              value: "3"
+            - name: S3_BUCKET
+              value: "nonprod-container-registry"
+            - name: S3_FOLDER
+              value: "kubernetes_cluster_label"
+            - name: ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: s3-storage-secret
+                  key: access_key
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: s3-storage-secret
+                  key: secret_key
+            volumeMounts:
+            - name: etcd-certs
+              mountPath: /etc/kubernetes/pki/etcd
+              readOnly: true
+            - mountPath: /tmp
+              name: tmp
+          volumes:
+          - name: etcd-certs
+            hostPath:
+              path: /etc/kubernetes/pki/etcd
+              type: DirectoryOrCreate
+          - name: tmp
+            hostPath:
+              path: /tmp
+              type: DirectoryOrCreate
+          restartPolicy: OnFailure
+          terminationGracePeriodSeconds: 45
+          securityContext:
+            runAsNonRoot: false
+            runAsUser: 0
+  schedule: '00 00 * * 6'
+  successfulJobsHistoryLimit: 7
+  suspend: false

@@ -1,0 +1,43 @@
+
+- name: Upgrade masters sequentially
+  include_tasks: "aad_masters.yaml"
+  with_items: "{{ groups['k8s-masters'] }}"
+  when: "hostvars[host_item].inventory_hostname == inventory_hostname"
+  loop_control:
+      loop_var: host_item
+
+- name: Create AAD Admin ClusterRoleBindings
+  shell: 
+    cmd: |
+      cat << EOF | kubectl apply -f -
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: {{ aad_admin_groupname }}:cluster-admin
+      subjects:
+        - kind: Group
+          name: {{ aad_admin_groupid }}
+          apiGroup: rbac.authorization.k8s.io
+      roleRef:
+        kind: ClusterRole
+        name: cluster-admin
+        apiGroup: rbac.authorization.k8s.io
+      EOF
+
+- name: Create AAD User ClusterRoleBindings
+  shell: 
+    cmd: |
+      cat << EOF | kubectl apply -f -
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: {{ aad_user_groupname }}:cluster-admin
+      subjects:
+        - kind: Group
+          name: {{ aad_user_groupid }}
+          apiGroup: rbac.authorization.k8s.io
+      roleRef:
+        kind: ClusterRole
+        name: cluster-admin
+        apiGroup: rbac.authorization.k8s.io
+      EOF

@@ -1,0 +1,20 @@
+- name: copy ingress-nginx manifests
+  template:
+    src: ingress-nginx.yaml
+    dest: /tmp/ingress-nginx.yaml
+    force: yes
+
+- name: Set nginx-ingress-controller container image value
+  replace:
+    path: /tmp/ingress-nginx.yaml
+    regexp: "image: quay.io/kubernetes-ingress-controller"
+    replace: "image: {{ container_registry }}/system"
+
+- name: Set alpines container image value
+  replace:
+    path: /tmp/ingress-nginx.yaml
+    regexp: "image: privateregistry"
+    replace: "image: {{ container_registry }}/system"
+
+- name: Create nginx-ingress-controller  Deployments
+  shell: kubectl apply -f /tmp/ingress-nginx.yaml

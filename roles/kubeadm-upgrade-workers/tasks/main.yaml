@@ -1,0 +1,7 @@
+
+- name: Upgrade workers sequentially
+  include_tasks: "upgrade_worker.yaml"
+  with_items: "{{ groups['k8s-workers'] }}"
+  when: "hostvars[host_item].inventory_hostname == inventory_hostname"
+  loop_control:
+      loop_var: host_item

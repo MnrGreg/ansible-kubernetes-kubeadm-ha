@@ -10,8 +10,6 @@
     ip link delete cni0
     rm -rf /var/lib/docker/*
     rm -rf /etc/kubernetes
-    rm -f /tmp/kubeadm-config.yaml
-    rm -rf /tmp/charts/
 
 - name: remove yum packages
   become: yes
@@ -24,7 +22,7 @@
     - kubectl
     - docker-ce
     - device-mapper-persistent-data
-    - lvm2
+#    - lvm2
 
 - name: Remove docker-ce-stable repo
   yum_repository:

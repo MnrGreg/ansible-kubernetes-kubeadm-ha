@@ -1,15 +1,14 @@
-- name: Copy Calico RBAC rbac-kdd.yaml manifests
-  template:
-    src: rbac-kdd.yaml
-    dest: /tmp/rbac-kdd.yaml
-
-- name: Create Calico RBAC Deployment
-  shell: kubectl apply -f /tmp/rbac-kdd.yaml
-
 - name: Copy calico.yaml manifests
   template:
     src: calico.yaml
     dest: /tmp/calico.yaml
+    force: yes
+
+- name: Set Calico container image value
+  replace:
+    path: /tmp/calico.yaml
+    regexp: "image: calico"
+    replace: "image: {{ container_registry }}/keystone"
 
 - name: Create Calico Deployment
   shell: kubectl apply -f /tmp/calico.yaml

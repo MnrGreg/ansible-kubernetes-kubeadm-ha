@@ -1,0 +1,32 @@
+- pause:
+    prompt: "Set kubectl context to cluster and proceed with draining node {{ inventory_hostname_short }}"
+
+- name: Drain kubernetes worker node {{ inventory_hostname_short }}
+  local_action: command kubectl drain {{ inventory_hostname_short }} --delete-local-data  --ignore-daemonsets --force
+  register: kubeadm_drain
+  until: kubeadm_drain.rc == 0
+  become: no
+
+- name: Update the system
+  yum:
+    name: "*"
+    state: latest
+    disable_gpg_check: true
+
+- name: Check for reboot
+  shell: if [ $(rpm -q kernel|tail -n 1) != kernel-$(uname -r) ]; then echo 'reboot' else echo 'no'; fi
+  ignore_errors: true
+  register: reboot_hint
+  changed_when: "'reboot' in reboot_hint.stdout"
+
+- name: Reboot system to complete patching
+  reboot:
+    reboot_timeout: 300
+  ignore_errors: true
+  when: reboot_hint.stdout.find("reboot") != -1
+  register: rebooting
+
+- name: Uncordon worker node
+  local_action: command kubectl uncordon {{ inventory_hostname_short }}
+  register: kubeadm_uncordon
+  become: no

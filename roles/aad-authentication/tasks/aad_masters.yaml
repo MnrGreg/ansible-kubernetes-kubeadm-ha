@@ -1,0 +1,9 @@
+- name: Add Azure OIDC authentication to Kubernetes
+  blockinfile:
+    path: /etc/kubernetes/manifests/kube-apiserver.yaml
+    insertafter: '^    - kube-apiserver'
+    block: |2
+          - --oidc-client-id=spn:XXXXX
+          - --oidc-issuer-url=https://sts.windows.net/XXXXX/
+          - --oidc-username-claim=upn
+          - --oidc-groups-claim=groups

@@ -1,0 +1,5 @@
+- hosts: k8s-workers
+  become: yes
+  serial: 1
+  roles:
+    - kubeadm-upgrade-workers

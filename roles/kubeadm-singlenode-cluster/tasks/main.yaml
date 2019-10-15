@@ -1,0 +1,4 @@
+- name: kubectl taint remove master
+  shell: kubectl taint node {{ hostvars[item].inventory_hostname_short }} node-role.kubernetes.io/master-
+  with_items: "{{ groups['k8s-master-primary'][0] }}"
+  ignore_errors: True

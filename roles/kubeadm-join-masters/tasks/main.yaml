@@ -1,6 +1,3 @@
-- name: Download Kubeadm container images
-  shell: kubeadm config images pull
-
 - name: "Create kubernetes folders"
   file:
     path: /etc/kubernetes/pki/etcd
@@ -27,7 +24,7 @@
     kubeadm_join: "{{ kubeadm_join_cmd.stdout }}"
 
 - name: Join Master replicas to cluster
-  shell: "{{ kubeadm_join }} --experimental-control-plane"
+  shell: "{{ kubeadm_join }} --control-plane"
 
 - pause:
     prompt: "Wait for containers to Pull and install"

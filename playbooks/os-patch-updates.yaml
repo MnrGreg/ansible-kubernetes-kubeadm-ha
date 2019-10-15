@@ -1,0 +1,4 @@
+- hosts: k8s-masters:k8s-workers
+  become: yes
+  roles:
+    - os-patch-updates

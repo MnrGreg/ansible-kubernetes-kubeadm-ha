@@ -1,0 +1,50 @@
+- name: Upgrade kubenetes packages
+  yum:
+    name: "{{ packages }}"
+    enablerepo: kubernetes
+  vars:
+    packages:
+    - kubelet-{{kubeadm_version}}
+    - kubectl-{{kubeadm_version}}
+    - kubeadm-{{kubeadm_version}}
+
+- name: "Update kubeadm config yaml"
+  copy:
+    content: "{{ kubeadm_config_options | to_nice_yaml }}"
+    dest: /tmp/kubeadm-config.yaml
+    mode: 0644
+
+- name: "Kubeadm upgrade plan"
+  shell: kubeadm upgrade plan --config /tmp/kubeadm-config.yaml  --print-config
+  register: rslt
+
+- pause:
+    prompt: "Validate plan"
+
+- name: "Kubeadm upgrade dry-run"
+  shell: kubeadm upgrade apply {{kubernetes_version}} --config /tmp/kubeadm-config.yaml --dry-run
+  register: rslt
+
+- pause:
+    prompt: "Validate dry-run"
+
+- name: "Kubeadm upgrade"
+  shell: kubeadm upgrade apply -f --config /tmp/kubeadm-config.yaml {{kubernetes_version}} 
+  register: rslt
+
+- pause:
+    prompt: "Proceed with restart"
+
+- name: Restart kubelet
+  systemd:
+    state: restarted
+    daemon_reload: yes
+    name: kubelet
+    enabled: yes
+
+- name: Upgrade masters sequentially
+  include_tasks: "upgrade_masters.yaml"
+  with_items: "{{ groups['k8s-master-replicas'] }}"
+  when: "hostvars[host_item].inventory_hostname == inventory_hostname"
+  loop_control:
+      loop_var: host_item

@@ -1,0 +1,23 @@
+- name: Upgrade kubenetes packages
+  yum:
+    name: "{{ packages }}"
+    enablerepo: kubernetes
+  vars:
+    packages:
+    - kubelet-{{kubeadm_version}}
+    - kubectl-{{kubeadm_version}}
+    - kubeadm-{{kubeadm_version}}
+
+- name: "Kubeadm upgrade: kubeadm upgrade node experimental-control-plane - remove (experimental-control-plane) for +v1.15"
+  shell: kubeadm upgrade node experimental-control-plane
+  register: rslt
+
+- pause:
+    prompt: "Proceed with restart"
+
+- name: Restart kubelet
+  systemd:
+    state: restarted
+    daemon_reload: yes
+    name: kubelet
+    enabled: yes

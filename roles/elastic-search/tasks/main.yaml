@@ -1,0 +1,68 @@
+- name: copy kube-state-metrics manifests
+  template:
+    src: kube-state-metrics.yaml
+    dest: /tmp/kube-state-metrics.yaml
+    force: yes
+
+- name: Set Kube State Metrics container image value
+  replace:
+    path: /tmp/kube-state-metrics.yaml
+    regexp: "image: quay.io/coreos"
+    replace: "image: {{ container_registry }}/system"
+
+- name: Set Kube State Metrics container image value
+  replace:
+    path: /tmp/kube-state-metrics.yaml
+    regexp: "image: k8s.gcr.io"
+    replace: "image: {{ container_registry }}/system"
+
+- name: Create Kube State Metrics Deployments
+  shell: kubectl apply -f /tmp/kube-state-metrics.yaml
+
+
+- name: copy filebeat manifests
+  template:
+    src: filebeat-kubernetes.yaml
+    dest: /tmp/filebeat-kubernetes.yaml
+    force: yes
+
+- name: Set filebeat container image value
+  replace:
+    path: /tmp/filebeat-kubernetes.yaml
+    regexp: "image: docker.elastic.co/beats"
+    replace: "image: {{ container_registry }}/system"
+
+- name: Set filebeat app_id value
+  replace:
+    path: /tmp/filebeat-kubernetes.yaml
+    regexp: "app_id: filebeat_app_id"
+    replace: "app_id: {{ filebeat_app_id }}"
+
+- name: Create filebeat Deployments
+  shell: kubectl apply -f /tmp/filebeat-kubernetes.yaml
+
+- name: copy metricbeat manifests
+  template:
+    src: metricbeat-kubernetes.yaml
+    dest: /tmp/metricbeat-kubernetes.yaml
+    force: yes
+
+- name: Set metricbeat container image value
+  replace:
+    path: /tmp/metricbeat-kubernetes.yaml
+    regexp: "image: docker.elastic.co/beats"
+    replace: "image: {{ container_registry }}/system"
+
+- name: Set metricbeat app_id value
+  replace:
+    path: /tmp/metricbeat-kubernetes.yaml
+    regexp: "app_id: metricbeat_app_id"
+    replace: "app_id: {{ metricbeat_app_id }}"
+
+- name: Create metricbeat Deployments
+  shell: kubectl apply -f /tmp/metricbeat-kubernetes.yaml
+
+- name: Label kubernetes nodes with cluster tag
+  shell: kubectl label node {{ hostvars[item].inventory_hostname_short }} "cluster={{kubernetes_cluster_label}}"
+  delegate_to: "{{ groups['k8s-master-primary'][0] }}"
+  with_items: "{{ groups['k8s-nodes'] }}"
